@@ -1,0 +1,65 @@
+{
+    "name": "omegga-discord-lite",
+    "author": "x",
+    "description": "A lite derivation of omegga-discord",
+    "config": {
+        "token": {
+            "description": "The token of the bot to use.",
+            "type": "string",
+            "default": ""
+        },
+        "channel-id": {
+            "description": "The channel ID the bot should write to.",
+            "type": "string",
+            "default": ""
+        },
+        "channel-name-online-format": {
+            "description": "When this field is set, the channel name will be set to this format. $n is replaced with the number of online players. For example, you can set this field to \"server-$n\" so the channel appears as #server-5 when 5 players are online.",
+            "type": "string",
+            "default": ""
+        },
+        "discord-prefix": {
+            "description": "The prefix Discord commands will use.",
+            "type": "string",
+            "default": "!"
+        },
+        "game-message-format": {
+            "description": "The message format going into the game. ($user = sender, $message = content, $color = role hex color, $role = see discord-roles)",
+            "type": "string",
+            "default": "<color=\"$color\"><b>$user</b></>: $message"
+        },
+        "discord-message-format": {
+            "description": "The message format going to Discord. ($user = sender, $message = content, $role = see game-roles)",
+            "type": "string",
+            "default": "**$user**: $message"
+        },
+        "join-message-format": {
+            "description": "The message format into Discord when a user joins the game. ($user = joining user)",
+            "type": "string",
+            "default": "**$user joined the game.**"
+        },
+        "leave-message-format": {
+            "description": "The message format into Discord when a user leaves the game. ($user = leaving user)",
+            "type": "string",
+            "default": "**$user left the game.**"
+        },
+        "server-start-format": {
+            "description": "The messate format into Discord when the server starts. ($map = the map)",
+            "type": "string",
+            "default": "**The server has started.**"
+        },
+        "game-roles": {
+            "description": "A list of items in the format ROLENAME:TEXT. When $role is included in a message format, the user's highest role with TEXT set in this field is used. For example, you can set Admin:[Admin] to make users with the role Admin have $role set to [Admin]. Use the role name \"default\" (no quotes) to indicate no roles.",
+            "type": "list",
+            "itemType": "string",
+            "default": []
+        },
+        "discord-roles": {
+            "description": "A list of items in the format ROLENAME:TEXT. When $role is included in a message format, the user's highest role with TEXT set in this field is used. For example, you can set Admin:[Admin] to make users with the role Admin have $role set to [Admin].",
+            "type": "list",
+            "itemType": "string",
+            "default": ["@everyone:<emoji>egg</>"]
+        }
+    },
+    "commands": []
+}
