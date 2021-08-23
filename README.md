@@ -27,8 +27,7 @@ The following configuration options are optional, as they have defaults or are n
 | --- | --- | --- | --- |
 | `channel-name-online-format` | string | *(blank)* | When this field is set, the channel's name will dynamically change when a player joins or leaves the game. It has the formatter `$n`, which is the number of players online. See the section on formatters below. |
 | `discord-prefix` | string | `!` | The prefix for commands through Discord, like `!players`. |
-| `game-message-format` | string | `<color="$color"><b>$user</></>: $message` | The format for messages from Discord to in-game. It has the formatters `$message` (the message content), `$user` (the nickname/username of the speaking user), `$color` (the user's role color in hexadecimal),
-and `$role` (see the section on Role Formatters below). |
+| `game-message-format` | string | `<color="$color"><b>$user</></>: $message` | The format for messages from Discord to in-game. It has the formatters `$message` (the message content), `$user` (the nickname/username of the speaking user), `$color` (the user's role color in hexadecimal), and `$role` (see the section on Role Formatters below). |
 | `discord-message-format` | string | `**$user**: $message` | The format for messages from in-game to Discord. It has the formatters `$message` (the message content), `$user` (the nickname/username of the speaking user), and `$role` (see the section on Role Formatters below). |
 | `join-message-format` | string | `**$user joined the game.**` | The format for players joining the game. It has the formatters `$user` (the joining user) and `$role` (see the section on Role Formatters below). |
 | `leave-message-format` | string | `**$user left the game.**` | See above. |
