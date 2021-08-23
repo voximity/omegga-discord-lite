@@ -24,6 +24,7 @@ A few configuration settings are required to be set up initially.
 The following configuration options are optional, as they have defaults or are not enabled.
 
 | **Name** | **Type** | **Default** | **Description** |
+| --- | --- | --- | --- |
 | `channel-name-online-format` | string | *(blank)* | When this field is set, the channel's name will dynamically change when a player joins or leaves the game. It has the formatter `$n`, which is the number of players online. See the section on formatters below. |
 | `discord-prefix` | string | `!` | The prefix for commands through Discord, like `!players`. |
 | `game-message-format` | string | `<color="$color"><b>$user</></>: $message` | The format for messages from Discord to in-game. It has the formatters `$message` (the message content), `$user` (the nickname/username of the speaking user), `$color` (the user's role color in hexadecimal),
