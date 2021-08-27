@@ -59,6 +59,7 @@ pub fn format_to_game(source: String) -> String {
                 Regex::new("<:br_([A-Za-z_]+):\\d+>").unwrap(),
                 "<emoji>$1</>"
             ),
+            (Regex::new("`(.+)`").unwrap(), "<code>$1</>"),
             (Regex::new("\\*\\*(.+)\\*\\*").unwrap(), "<b>$1</>"),
             (Regex::new("\\*(.+)\\*").unwrap(), "<i>$1</>"),
             (Regex::new("__(.+)__").unwrap(), "<u>$1</>"),
