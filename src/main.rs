@@ -5,9 +5,12 @@ use std::{fs::File, sync::Arc};
 
 use anyhow::Result;
 
+use dashmap::{mapref::entry::Entry, DashMap};
 use format::format_content;
 use omegga::{resources::Player, rpc, Omegga};
+use rand::{distributions, Rng};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};
 use twilight_gateway::{Intents, Shard};
 use twilight_http::Client as HttpClient;
@@ -48,15 +51,33 @@ pub struct Config {
 
     #[serde(rename = "discord-roles")]
     pub discord_roles: Vec<String>,
+
+    #[serde(rename = "verified-role")]
+    pub verified_role: String,
+
+    #[serde(rename = "verified-nickname")]
+    pub verified_nickname: bool,
 }
 
 #[derive(Clone)]
 pub struct State {
+    /// The plugin config.
     pub config: Arc<Config>,
+
+    /// The Discord HTTP client.
     pub http: HttpClient,
+
+    /// The Omegga interface.
     pub omegga: Arc<Omegga>,
+
+    /// The Discord cache.
     pub cache: InMemoryCache,
+
+    /// The ID messages are being sent to in Discord.
     pub channel_id: ChannelId,
+
+    /// A buffer of player UUID to verification code to verify on Discord.
+    pub verify_buffer: Arc<DashMap<String, String>>,
 }
 
 async fn user_formatters(state: &State, user: String) -> Result<Vec<Formatter>> {
@@ -90,8 +111,11 @@ async fn main() -> Result<()> {
     )?)?);
 
     // connect to discord's gateway
-    let (shard, events) =
-        Shard::builder(&config.token, Intents::GUILDS | Intents::GUILD_MESSAGES).build();
+    let (shard, events) = Shard::builder(
+        &config.token,
+        Intents::GUILDS | Intents::GUILD_MESSAGES | Intents::DIRECT_MESSAGES,
+    )
+    .build();
 
     // instantiate a discord http client
     let http = HttpClient::new(config.token.clone());
@@ -109,22 +133,33 @@ async fn main() -> Result<()> {
         omegga,
         cache,
         channel_id,
+        verify_buffer: Arc::new(DashMap::new()),
     };
 
     let task_state = state.clone();
     tokio::spawn(async move {
-        if let Err(_error) = discord::listener(task_state, events).await {
-            // Nooooooooo
+        if let Err(_error) = discord::listener(task_state.clone(), events).await {
+            task_state
+                .omegga
+                .error(format!("Error while listening to Discord: {}", _error));
         }
     });
 
     while let Some(message) = rx.recv().await {
         match message {
             rpc::Message::Request { method, id, .. } if method == "init" || method == "stop" => {
-                if method == "init" {
-                    shard.start().await?;
+                match method.as_str() {
+                    "init" => {
+                        shard.start().await?;
+                        state.omegga.write_response(
+                            id,
+                            Some(json!({"registeredCommands": ["discord"]})),
+                            None,
+                        );
+                    }
+                    "stop" => state.omegga.write_response(id, None, None),
+                    _ => (),
                 }
-                state.omegga.write_response(id, None, None);
             }
             rpc::Message::Notification { method, params, .. } if method == "start" => {
                 #[derive(Serialize, Deserialize, Default)]
@@ -132,14 +167,15 @@ async fn main() -> Result<()> {
                     map: String,
                 }
 
-                let mut params = serde_json::from_value::<Vec<StartObject>>(match params {
+                let params = serde_json::from_value::<Vec<StartObject>>(match params {
                     Some(p) => p,
                     None => continue,
                 })
                 .unwrap()
-                .into_iter();
+                .into_iter()
+                .next()
+                .unwrap_or_default();
 
-                let map = params.next().unwrap_or_default();
                 state
                     .http
                     .create_message(channel_id)
@@ -147,7 +183,7 @@ async fn main() -> Result<()> {
                         state.config.server_start_format.clone(),
                         &[Formatter {
                             key: "map",
-                            value: map.map,
+                            value: params.map,
                         }],
                     ))?
                     .exec()
@@ -193,6 +229,12 @@ async fn main() -> Result<()> {
                 .into_iter();
 
                 let player = params.next().unwrap();
+
+                if method == "leave" {
+                    // remove from the verify buffer if the player leaves
+                    state.verify_buffer.remove(&player.id);
+                }
+
                 let formatters = user_formatters(&state, player.name.clone()).await?;
 
                 state
@@ -229,6 +271,82 @@ async fn main() -> Result<()> {
                             .omegga
                             .error(format!("Error on updating channel: {}", error));
                     }
+                }
+            }
+            rpc::Message::Notification { method, params, .. } if method == "cmd:discord" => {
+                let mut params = serde_json::from_value::<Vec<String>>(params.unwrap())
+                    .unwrap()
+                    .into_iter();
+                let user = params.next().unwrap();
+                let subcommand = match params.next() {
+                    Some(s) => s,
+                    None => {
+                        state
+                            .omegga
+                            .whisper(&user, "<color=\"a00\">Please specify a command to run.</>");
+                        continue;
+                    }
+                };
+                let _args = params.collect::<Vec<_>>();
+
+                match subcommand.as_str() {
+                    "wipe" => {
+                        let player = state.omegga.get_player(&user).await?.unwrap();
+                        if player.host.unwrap_or(false) {
+                            state.omegga.store_wipe();
+                            state.omegga.broadcast("Verification store has been wiped.");
+                        }
+                    }
+                    "verify" => {
+                        let player = state.omegga.get_player(&user).await?.unwrap();
+
+                        // check if the user is already verified
+                        let entry = state
+                            .omegga
+                            .store_get(format!("g2d_{}", player.id))
+                            .await?;
+
+                        match entry {
+                            Some(_) => {
+                                // the user is verified
+                                state
+                                    .omegga
+                                    .whisper(&user, "<color=\"a00\">You are already verified!</>");
+                            }
+                            None => {
+                                // the user is not verified
+                                match state.verify_buffer.entry(player.id) {
+                                    Entry::Occupied(entry) => state.omegga.whisper(&user, format!(
+                                        "<color=\"a00\">You have already initiated the verification process! Send <code>{}verify {}</> in the game channel.</>",
+                                        state.config.discord_prefix,
+                                        entry.get()
+                                    )),
+                                    Entry::Vacant(entry) => {
+                                        let code = rand::thread_rng()
+                                            .sample_iter(&distributions::Alphanumeric)
+                                            .take(6)
+                                            .map(char::from)
+                                            .collect::<String>();
+
+                                        let entry = entry.insert(code);
+                                        state.omegga.whisper(&user, format!(
+                                            "To verify, send <code>{}verify {}</> in the game channel.",
+                                            state.config.discord_prefix,
+                                            entry.value()
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    unknown => state.omegga.whisper(
+                        &user,
+                        format!(
+                            "<color=\"a00\">There is no Discord command by the name <code>/discord {}</>.</>",
+                            unknown
+                        ),
+                    ),
                 }
             }
             _ => (),

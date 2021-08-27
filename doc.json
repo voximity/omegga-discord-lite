@@ -59,6 +59,16 @@
             "type": "list",
             "itemType": "string",
             "default": ["@everyone:<emoji>egg</>"]
+        },
+        "verified-role": {
+            "description": "The ID of the role to give to verified users. When blank, the role is not given.",
+            "type": "string",
+            "default": ""
+        },
+        "verified-nickname": {
+            "descrpition": "Whether or not to nickname Discord users their Brickadia username.",
+            "type": "boolean",
+            "default": false
         }
     },
     "commands": []
