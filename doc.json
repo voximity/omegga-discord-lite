@@ -13,6 +13,11 @@
             "type": "string",
             "default": ""
         },
+        "discord-link": {
+            "description": "The Discord invite URL. This will be shown when the user runs !discord or /discord.",
+            "type": "string",
+            "default": "https://discord.com/"
+        },
         "channel-name-online-format": {
             "description": "When this field is set, the channel name will be set to this format. $n is replaced with the number of online players. For example, you can set this field to \"server-$n\" so the channel appears as #server-5 when 5 players are online.",
             "type": "string",
@@ -59,6 +64,11 @@
             "type": "list",
             "itemType": "string",
             "default": ["@everyone:<emoji>egg</>"]
+        },
+        "verification": {
+            "description": "Whether or not verification should be enabled. Provided this is on, users can verify with their Discord account with /discord verify.",
+            "type": "boolean",
+            "default": false
         },
         "verified-role": {
             "description": "The ID of the role to give to verified users. When blank, the role is not given.",

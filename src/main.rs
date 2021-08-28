@@ -25,6 +25,9 @@ pub struct Config {
     #[serde(rename = "channel-id")]
     pub channel_id: String,
 
+    #[serde(rename = "discord-link")]
+    pub discord_link: String,
+
     #[serde(rename = "channel-name-online-format")]
     pub channel_name_online_format: String,
 
@@ -51,6 +54,8 @@ pub struct Config {
 
     #[serde(rename = "discord-roles")]
     pub discord_roles: Vec<String>,
+
+    pub verification: bool,
 
     #[serde(rename = "verified-role")]
     pub verified_role: String,
@@ -273,6 +278,12 @@ async fn main() -> Result<()> {
                     }
                 }
             }
+            rpc::Message::Notification { method, .. } if method == "chatcmd:discord" => {
+                state.omegga.broadcast(format!(
+                    "Join this server's <link=\"{}\">Discord</>.",
+                    state.config.discord_link
+                ))
+            }
             rpc::Message::Notification { method, params, .. } if method == "cmd:discord" => {
                 let mut params = serde_json::from_value::<Vec<String>>(params.unwrap())
                     .unwrap()
@@ -298,13 +309,14 @@ async fn main() -> Result<()> {
                         }
                     }
                     "verify" => {
+                        if !state.config.verification {
+                            continue;
+                        }
+
                         let player = state.omegga.get_player(&user).await?.unwrap();
 
                         // check if the user is already verified
-                        let entry = state
-                            .omegga
-                            .store_get(format!("g2d_{}", player.id))
-                            .await?;
+                        let entry = state.omegga.store_get(format!("g2d_{}", player.id)).await?;
 
                         match entry {
                             Some(_) => {
@@ -340,11 +352,11 @@ async fn main() -> Result<()> {
                         }
                     }
 
-                    unknown => state.omegga.whisper(
+                    _ => state.omegga.whisper(
                         &user,
                         format!(
-                            "<color=\"a00\">There is no Discord command by the name <code>/discord {}</>.</>",
-                            unknown
+                            "Join this server's <link=\"{}\">Discord</>.",
+                            state.config.discord_link
                         ),
                     ),
                 }

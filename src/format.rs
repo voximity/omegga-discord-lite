@@ -59,7 +59,10 @@ pub fn format_to_game(source: String) -> String {
                 Regex::new("<:br_([A-Za-z_]+):\\d+>").unwrap(),
                 "<emoji>$1</>"
             ),
-            (Regex::new("<@!(\\d+)>").unwrap(), "<link=\"https://discord.com/users/$1\">@$1</>"),
+            (
+                Regex::new("<@!(\\d+)>").unwrap(),
+                "<link=\"https://discord.com/users/$1\">@mentioned</>"
+            ),
             (Regex::new("`(.+)`").unwrap(), "<code>$1</>"),
             (Regex::new("\\*\\*(.+)\\*\\*").unwrap(), "<b>$1</>"),
             (Regex::new("\\*(.+)\\*").unwrap(), "<i>$1</>"),

@@ -25,6 +25,7 @@ The following configuration options are optional, as they have defaults or are n
 
 | **Name** | **Type** | **Default** | **Description** |
 | --- | --- | --- | --- |
+| `discord-link` | string | `https://discord.com/` | Set this to an infinite invite to your Discord server. This will be shown when the user runs `!discord` or `/discord`. |
 | `channel-name-online-format` | string | *(blank)* | When this field is set, the channel's name will dynamically change when a player joins or leaves the game. It has the formatter `$n`, which is the number of players online. See the section on formatters below. |
 | `discord-prefix` | string | `!` | The prefix for commands through Discord, like `!players`. |
 | `game-message-format` | string | `<color="$color"><b>$user</></>: $message` | The format for messages from Discord to in-game. It has the formatters `$message` (the message content), `$user` (the nickname/username of the speaking user), `$color` (the user's role color in hexadecimal), and `$role` (see the section on Role Formatters below). |
@@ -34,6 +35,9 @@ The following configuration options are optional, as they have defaults or are n
 | `server-start-format` | string | `**The server has started.**` | The format for when the server starts. It has the formatter `$map` (the map the server started on). |
 | `game-roles` | \[string\] | *(empty)* | Role formatters for in-game roles going to Discord. See the section on Role Formatters below. |
 | `discord-roles` | \[string\] | *(empty)* | Role formatters for Discord roles going in-game. See the section on Role Formatters below. |
+| `verification` | bool | `false` | Whether or not user verification should be enabled. When enabled, users can `/discord verify` from in-game to start a verification process and link their Brickadia player account with their Discord account. |
+| `verified-role` | string | *(empty)* | The role ID of the role to give when a user is successfully verified. |
+| `verified-nickname` | bool | `false` | Whether or not to set a Discord user's nickname automatically to their linked and verified Brickadia player. |
 
 ### Formatters
 

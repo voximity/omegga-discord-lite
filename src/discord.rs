@@ -119,6 +119,10 @@ pub async fn listener(state: State, mut events: Events) -> Result<()> {
                             }
                         }
                         "verify" => {
+                            if !state.config.verification {
+                                continue;
+                            }
+
                             match args {
                                 "" => {
                                     if let Some(player) = state
@@ -171,8 +175,11 @@ pub async fn listener(state: State, mut events: Events) -> Result<()> {
 
                                     if let Entry::Occupied(entry) = state.verify_buffer.entry(key) {
                                         // fetch the in-game player
-                                        let player =
-                                            state.omegga.get_player(entry.key().to_owned()).await?.unwrap();
+                                        let player = state
+                                            .omegga
+                                            .get_player(entry.key().to_owned())
+                                            .await?
+                                            .unwrap();
 
                                         // add to the database
                                         state.omegga.store_set(
@@ -215,11 +222,13 @@ pub async fn listener(state: State, mut events: Events) -> Result<()> {
 
                 // get user info
                 let member = message.member.as_ref().unwrap();
-                let roles = member
+                let mut roles = member
                     .roles
                     .iter()
                     .map(|id| state.cache.role(*id).unwrap())
                     .collect::<Vec<_>>();
+
+                roles.sort_by_key(|r| r.position);
 
                 let role_color = roles
                     .iter()
@@ -259,7 +268,9 @@ pub async fn listener(state: State, mut events: Events) -> Result<()> {
                     &formatters,
                 ));
 
-                state.omegga.log(format_content("<$user> $message".into(), &formatters));
+                state
+                    .omegga
+                    .log(format_content("<$user> $message".into(), &formatters));
             }
             _ => (),
         }
