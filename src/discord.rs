@@ -228,7 +228,7 @@ pub async fn listener(state: State, mut events: Events) -> Result<()> {
                     .map(|id| state.cache.role(*id).unwrap())
                     .collect::<Vec<_>>();
 
-                roles.sort_by_key(|r| r.position);
+                roles.sort_by(|a, b| b.position.cmp(&a.position));
 
                 let role_color = roles
                     .iter()
