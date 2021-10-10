@@ -1,0 +1,30 @@
+name: Build and bundle
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+  REPOSITORY: ${{ github.event.repository.name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Build
+      run: cargo build --verbose --release
+      
+    - name: Move binary
+      run: mkdir bin; cp ./target/release/${REPOSITORY} ./bin/${REPOSITORY}
+      
+    - name: Commit
+      uses: EndBug/add-and-commit@v7
+      with:
+        author_name: BrickBot
+        author_email: brickbot@brickadia.dev
+        message: 'chore(bundle): build and bundle release binary'
+        add: '*'
+        
