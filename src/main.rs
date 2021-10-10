@@ -213,7 +213,7 @@ async fn main() -> Result<()> {
                     }],
                 ]);
 
-                state
+                match state
                     .http
                     .create_message(channel_id)
                     .content(&format_content(
@@ -221,7 +221,13 @@ async fn main() -> Result<()> {
                         &formatters,
                     ))?
                     .exec()
-                    .await?;
+                    .await
+                {
+                    Ok(_) => (),
+                    Err(e) => state
+                        .omegga
+                        .log(format!("Error sending chat message: {}", e)),
+                }
             }
             rpc::Message::Notification { method, params, .. }
                 if method == "join" || method == "leave" =>
@@ -242,7 +248,7 @@ async fn main() -> Result<()> {
 
                 let formatters = user_formatters(&state, player.name.clone()).await?;
 
-                state
+                match match state
                     .http
                     .create_message(channel_id)
                     .content(&format_content(
@@ -252,9 +258,26 @@ async fn main() -> Result<()> {
                             _ => unreachable!(),
                         },
                         &formatters,
-                    ))?
-                    .exec()
-                    .await?;
+                    )) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        state
+                            .omegga
+                            .log(format!("Error sending {} message: {}", method, e));
+                        continue;
+                    }
+                }
+                .exec()
+                .await
+                {
+                    Ok(_) => (),
+                    Err(e) => {
+                        state
+                            .omegga
+                            .log(format!("Error sending {} message: {}", method, e));
+                        continue;
+                    }
+                }
 
                 if !state.config.channel_name_online_format.is_empty() {
                     let players = state.omegga.get_players().await?;
